@@ -7,14 +7,16 @@ import slick.driver.PostgresDriver.api._
 
 trait VideoDAO {
 
-  def findNotConvertedVideos(): DBIO[Option[Videos]]
+  def findNotConvertedVideos(videosId : Seq[Int]): DBIO[Option[Videos]]
   def updateVideoById(videoId: Int, contentType: String, fileName: String, fileSize: Int): DBIO[Int]
 
 }
 class VideoSqlImplDAO extends VideoDAO with VideoTable {
 
-  override def findNotConvertedVideos(): DBIO[Option[Videos]] = {
-    val result = videosQuery.filterNot(_.estado).result.headOption
+  override def findNotConvertedVideos(videosId : Seq[Int]): DBIO[Option[Videos]] = {
+    val result = videosQuery.filterNot(row => row.estado).
+      filterNot(row => row.id inSetBind videosId).
+      result.headOption
     result
   }
 

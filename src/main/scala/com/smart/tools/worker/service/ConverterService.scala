@@ -1,18 +1,18 @@
 package com.smart.tools.worker.service
 
-import java.util.Calendar
 import akka.actor.ActorSystem
-import com.smart.tools.worker.config.DataBaseConfig
 import com.smart.tools.worker.dao.VideoDAO
 import com.smart.tools.worker.models.Videos
+import com.typesafe.config.Config
 import net.bramp.ffmpeg.builder.FFmpegBuilder
 import net.bramp.ffmpeg.{FFmpeg, FFprobe}
 import scala.concurrent.Future
 import net.bramp.ffmpeg.FFmpegExecutor
 import org.joda.time.{DateTime, DateTimeZone}
+import slick.jdbc.JdbcBackend
 import scala.concurrent.duration._
 
-class ConverterService(videoDAO : VideoDAO, system: ActorSystem) extends DataBaseConfig  {
+class ConverterService(videoDAO : VideoDAO, system: ActorSystem, config: Config, db: JdbcBackend.Database, emailService: EmailService) {
 
   import system.dispatcher
 
@@ -37,7 +37,7 @@ class ConverterService(videoDAO : VideoDAO, system: ActorSystem) extends DataBas
 
     println("Buscando Videos que no han convertido")
 
-    val possibleVideo = db.run(videoDAO.findNotConvertedVideos())
+    val possibleVideo = db.run(videoDAO.findNotConvertedVideos(Seq()))
 
     possibleVideo.flatMap {
       case Some(video) => executeBackgroundProccess(video)
@@ -50,7 +50,10 @@ class ConverterService(videoDAO : VideoDAO, system: ActorSystem) extends DataBas
     for {
       (videoId, contentType, fileName, fileSize) <- convertVideo(video)
       _ <- updateVideoState(videoId, contentType, fileName, fileSize)
-    } yield ()
+      session <- emailService.sendEmail(video.correo, video.nombre, video.apellido, video.concursoId)
+    } yield {
+      session.close()
+    }
   }
 
   private def convertVideo(video: Videos) : Future[(Int, String, String, Int)] = {
