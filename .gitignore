@@ -1,0 +1,20 @@
+
+.DS_Store
+
+.idea/*
+openssl
+
+# Scala
+bin/
+logs/
+target/
+.idea
+.idea_modules
+.classpath
+.project
+.settings
+.cache*
+/RUNNING_PID
+/lib/jars/*.jar
+
+
