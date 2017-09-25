@@ -15,3 +15,6 @@ libraryDependencies ++= Seq(
   "javax.mail" % "mail" % "1.4.7",
   "com.typesafe.akka" %% "akka-testkit" % "2.5.4" % Test
 )
+
+mainClass in assembly := Some("com.smart.tools.worker.main.Main")
+assemblyJarName in assembly := "smartools-worker.jar"
