@@ -12,5 +12,9 @@ libraryDependencies ++= Seq(
   "com.amazonaws" % "aws-java-sdk" % "1.11.200",
   "net.bramp.ffmpeg" % "ffmpeg" % "0.6.1",
   "com.typesafe.akka" %% "akka-actor" % "2.5.4",
+  "javax.mail" % "mail" % "1.4.7",
   "com.typesafe.akka" %% "akka-testkit" % "2.5.4" % Test
 )
+
+mainClass in assembly := Some("com.smart.tools.worker.main.Main")
+assemblyJarName in assembly := "smartools-worker.jar"

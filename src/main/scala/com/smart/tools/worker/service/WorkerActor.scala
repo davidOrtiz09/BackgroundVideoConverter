@@ -1,22 +1,26 @@
 package com.smart.tools.worker.service
 
-import java.util.Calendar
-import akka.actor.ActorSystem
-import com.smart.tools.worker.config.DataBaseConfig
+import akka.actor.{Actor, PoisonPill, Props}
 import com.smart.tools.worker.dao.VideoDAO
 import com.smart.tools.worker.models.Videos
+import com.smart.tools.worker.service.ActorConverter.SendEmail
+import com.smart.tools.worker.service.WorkerActor.StartVideoConversion
+import com.typesafe.config.Config
 import net.bramp.ffmpeg.builder.FFmpegBuilder
-import net.bramp.ffmpeg.{FFmpeg, FFprobe}
-import scala.concurrent.Future
-import net.bramp.ffmpeg.FFmpegExecutor
+import net.bramp.ffmpeg.{FFmpeg, FFmpegExecutor, FFprobe}
 import org.joda.time.{DateTime, DateTimeZone}
-import scala.concurrent.duration._
+import slick.jdbc.JdbcBackend
+import scala.concurrent.Future
 
-class ConverterService(videoDAO : VideoDAO, system: ActorSystem) extends DataBaseConfig  {
+object WorkerActor {
+  case class StartVideoConversion(video: Videos)
 
-  import system.dispatcher
+  def props(config: Config, videoDAO : VideoDAO, db: JdbcBackend.Database) = Props(new WorkerActor(config, videoDAO, db))
+}
 
-  private val schedulerTime = 1.seconds
+class WorkerActor(config: Config, videoDAO : VideoDAO, db: JdbcBackend.Database) extends Actor {
+
+  import context.dispatcher
 
   private val ffmpegPath = config.getString("videos.libs.ffmpeg")
   private val ffprobePath = config.getString("videos.libs.ffprobe")
@@ -24,33 +28,23 @@ class ConverterService(videoDAO : VideoDAO, system: ActorSystem) extends DataBas
   private val nonConvertedVideoPath = config.getString("videos.path.no-converted")
   private val convertedVideoPath = config.getString("videos.path.converted")
 
-  system.scheduler.schedule(1.seconds, schedulerTime) {
-    println("Buscando Videos que no han convertido")
-
-    convertBackgroundVideos().onFailure {
-    case err:Throwable => {println("custom error message"); err.printStackTrace()}
-  }
-  }
-
-
-  def convertBackgroundVideos() : Future[Unit] = {
-
-    println("Buscando Videos que no han convertido")
-
-    val possibleVideo = db.run(videoDAO.findNotConvertedVideos())
-
-    possibleVideo.flatMap {
-      case Some(video) => executeBackgroundProccess(video)
-      case None => println("No se encontro ningun video a convertir")
-        Future.successful(())
+  def receive: Receive = {
+    case StartVideoConversion(video) => {
+      val mySender = sender()
+      for {
+        (videoId, contentType, fileName, fileSize) <- convertVideo(video)
+        _ <- updateVideoState(videoId, contentType, fileName, fileSize)
+      } yield {
+        mySender ! SendEmail(video.correo, video.nombre, video.apellido, video.concursoId)
+        self ! PoisonPill
+      }
     }
   }
 
-  def executeBackgroundProccess(video: Videos): Future[Unit] = {
-    for {
-      (videoId, contentType, fileName, fileSize) <- convertVideo(video)
-      _ <- updateVideoState(videoId, contentType, fileName, fileSize)
-    } yield ()
+  private def updateVideoState(videoId: Int, contentType: String, fileName: String, fileSize: Int) = {
+    println("..................Actualizando video : " + fileName + " " + "...........")
+
+    db.run(videoDAO.updateVideoById(videoId, contentType, fileName, fileSize))
   }
 
   private def convertVideo(video: Videos) : Future[(Int, String, String, Int)] = {
@@ -78,11 +72,4 @@ class ConverterService(videoDAO : VideoDAO, system: ActorSystem) extends DataBas
       (video.id, video.fileContentType, newFileName, video.fileSize)
     )
   }
-
-  private def updateVideoState(videoId: Int, contentType: String, fileName: String, fileSize: Int) = {
-    println("..................Actualizando video : " + fileName + " " + "...........")
-
-    db.run(videoDAO.updateVideoById(videoId, contentType, fileName, fileSize))
-  }
-
 }
