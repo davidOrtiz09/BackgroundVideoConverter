@@ -1,9 +1,10 @@
 package com.smart.tools.worker.service
 
 import akka.actor.{Actor, PoisonPill, Props}
+import com.amazonaws.services.sqs.model.Message
 import com.smart.tools.worker.dao.VideoDAO
 import com.smart.tools.worker.models.Videos
-import com.smart.tools.worker.service.ActorConverter.SendEmail
+import com.smart.tools.worker.service.ActorConverter.{DeleteSqSMsg, SendEmail}
 import com.smart.tools.worker.service.WorkerActor.StartVideoConversion
 import com.typesafe.config.Config
 import net.bramp.ffmpeg.builder.FFmpegBuilder
@@ -13,7 +14,7 @@ import slick.jdbc.JdbcBackend
 import scala.concurrent.Future
 
 object WorkerActor {
-  case class StartVideoConversion(video: Videos)
+  case class StartVideoConversion(video: Videos, message: Message)
 
   def props(config: Config, videoDAO : VideoDAO, db: JdbcBackend.Database) = Props(new WorkerActor(config, videoDAO, db))
 }
@@ -29,13 +30,14 @@ class WorkerActor(config: Config, videoDAO : VideoDAO, db: JdbcBackend.Database)
   private val convertedVideoPath = config.getString("videos.path.converted")
 
   def receive: Receive = {
-    case StartVideoConversion(video) => {
+    case StartVideoConversion(video, message) => {
       val mySender = sender()
       for {
         (videoId, contentType, fileName, fileSize) <- convertVideo(video)
         _ <- updateVideoState(videoId, contentType, fileName, fileSize)
       } yield {
         mySender ! SendEmail(video.correo, video.nombre, video.apellido, video.concursoId)
+        mySender ! DeleteSqSMsg(message)
         self ! PoisonPill
       }
     }

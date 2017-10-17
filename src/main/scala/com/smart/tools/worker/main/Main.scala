@@ -5,7 +5,9 @@ import com.smart.tools.worker.config.DataBaseConfig
 import com.smart.tools.worker.dao.VideoSqlImplDAO
 import com.smart.tools.worker.service.{ActorConverter, EmailServiceImpl}
 
-object Main extends App with DataBaseConfig{
+
+object Main extends App with DataBaseConfig {
+
   val system = ActorSystem("coder-Actor")
   import system.dispatcher
 

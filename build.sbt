@@ -11,8 +11,9 @@ libraryDependencies ++= Seq(
   "org.postgresql" % "postgresql" % "9.4-1201-jdbc41",
   "com.amazonaws" % "aws-java-sdk" % "1.11.200",
   "net.bramp.ffmpeg" % "ffmpeg" % "0.6.1",
-  "com.typesafe.akka" %% "akka-actor" % "2.5.4",
+  "com.typesafe.akka" %% "akka-actor" % "2.4.14",
   "javax.mail" % "mail" % "1.4.7",
+  "com.lightbend.akka" % "akka-stream-alpakka-sqs_2.11" % "0.13",
   "com.typesafe.akka" %% "akka-testkit" % "2.5.4" % Test
 )
 
