@@ -31,6 +31,7 @@ class WorkerActor(config: Config, videoDAO : VideoDAO, db: JdbcBackend.Database)
 
   def receive: Receive = {
     case StartVideoConversion(video, message) => {
+      print("Emepzando conversion video con id : " + video.id)
       val mySender = sender()
       for {
         (videoId, contentType, fileName, fileSize) <- convertVideo(video)

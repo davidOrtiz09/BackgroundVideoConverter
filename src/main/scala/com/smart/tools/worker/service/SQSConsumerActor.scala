@@ -38,6 +38,7 @@ class SQSConsumerActor(config: Config) extends Actor {
   SqsSource(queueUrl)
     .throttle(maxMsg, timeDelay.second, maxMsg, ThrottleMode.shaping)
     .runForeach((message) => {
+      println(message.getBody)
       val videoMsg = VideoWithMsg(message.getBody.toInt, message)
      context.parent ! SearchUncompleteVideo(videoMsg)
     })

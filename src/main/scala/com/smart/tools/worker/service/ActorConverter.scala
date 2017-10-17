@@ -32,8 +32,15 @@ class ActorConverter(videoDAO : VideoDAO, config: Config, db: JdbcBackend.Databa
 
       val possibleVideo = db.run(videoDAO.findNotConvertedVideo(videoMsg.videoId))
 
+      possibleVideo.onFailure {
+        case err: Exception =>
+          err.printStackTrace()
+      }
+
       possibleVideo.foreach {
-        case Some(video) => self ! CreateWorker(video, videoMsg.message)
+        case Some(video) => {
+          self ! CreateWorker(video, videoMsg.message)
+        }
         case None => {
           println("No se encontro ningun video a convertir")
           self ! DeleteSqSMsg(videoMsg.message)
@@ -50,7 +57,6 @@ class ActorConverter(videoDAO : VideoDAO, config: Config, db: JdbcBackend.Databa
       emailService.sendEmail(correo, nombre, apellido, url).foreach(session => session.close())
     }
     case DeleteSqSMsg(msg) => {
-      println("Eliminando mensaje")
       sqsConsumer ! DeleteMsg(msg)
     }
   }
