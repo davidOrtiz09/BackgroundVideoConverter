@@ -23,5 +23,13 @@ class VideoNoSqlImplDAO extends VideoDAO with DynamoConnector {
     }
   }
 
-  def updateVideoById(concursoId: String, videoId: Int, contentType: String, fileName: String, fileSize: Int): Int = ???
+  def updateVideoById(concursoId: String, videoId: Int, contentType: String, fileName: String, fileSize: Int): Int = {
+    val result = Scanamo.exec(client)(table.update('url_concurso -> concursoId and 'video_id -> videoId, set('estado -> true)
+    and set('file_converted_file_name -> fileName) and set('file_converted_content_type -> contentType)
+      and set('file_converted_file_size -> fileSize)))
+    result match {
+      case Right(_) => 1
+      case Left(_) => 0
+    }
+  }
 }

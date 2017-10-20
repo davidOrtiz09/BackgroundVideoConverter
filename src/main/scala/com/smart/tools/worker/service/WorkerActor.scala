@@ -31,7 +31,7 @@ class WorkerActor(config: Config, videoDAO : VideoDAO) extends Actor {
 
   def receive: Receive = {
     case StartVideoConversion(video, message) => {
-      print("Emepzando conversion video con id : " + video.video_id)
+      print("Empezando conversion video con id : " + video.video_id)
       val mySender = sender()
       for {
         (videoId, contentType, fileName, fileSize) <- convertVideo(video)
