@@ -8,12 +8,4 @@ trait DataBaseConfig {
 
   val config = ConfigFactory.load()
 
-  private val isProd = config.getBoolean("enviroments-is-prod")
-
-  val db: JdbcBackend.Database = if(isProd) {
-    Database.forConfig("prod-post-db")
-  } else {
-    Database.forConfig("dev-post-db")
-  }
-
 }

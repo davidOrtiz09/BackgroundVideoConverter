@@ -1,23 +1,21 @@
 package com.smart.tools.worker.models
 
-import java.time.Instant
-
 case class Videos(
-                   id: Int,
+                   video_id: Int,
                    nombre: String,
                    apellido: String,
                    correo: String,
                    estado: Boolean,
-                   decripcion: String,
-                   createdAt: Instant,
-                   updatedAt: Instant,
-                   fileName: String,
-                   fileContentType: String,
-                   fileSize: Int,
-                   fileUpdatedAt: Instant,
-                   concursoId: String,
-                   fileConvertedName: Option[String],
-                   fileConvertedContentType: Option[String],
-                   fileConvertedSize: Option[Int],
-                   fileConvertedUpdatedAt: Option[Instant]
+                   descripcion: String,
+                   created_at: String,
+                   updated_at: String,
+                   file_file_name: String,
+                   file_content_type: String,
+                   file_file_size: Int,
+                   file_updated_at: String,
+                   url_concurso: String,
+                   file_converted_file_name: Option[String],
+                   file_converted_content_type: Option[String],
+                   file_converted_file_size: Option[Int],
+                   file_converted_updated_at: Option[String]
                  )

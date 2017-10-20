@@ -1,31 +1,27 @@
 package com.smart.tools.worker.dao
 
 
-import java.time.Instant
+import com.gu.scanamo.{Scanamo, Table}
 import com.smart.tools.worker.models.Videos
-import slick.driver.PostgresDriver.api._
+import com.gu.scanamo.syntax._
 
 trait VideoDAO {
 
-  def findNotConvertedVideo(videoId : Int): DBIO[Option[Videos]]
-  def updateVideoById(videoId: Int, contentType: String, fileName: String, fileSize: Int): DBIO[Int]
+  def findNotConvertedVideo(concursoId: String, videoId : Int): Option[Videos]
+  def updateVideoById(concursoId: String, videoId: Int, contentType: String, fileName: String, fileSize: Int): Int
 
 }
-class VideoSqlImplDAO extends VideoDAO with VideoTable {
+class VideoNoSqlImplDAO extends VideoDAO with DynamoConnector {
 
-  override def findNotConvertedVideo(videoId : Int): DBIO[Option[Videos]] = {
-    val result = videosQuery.filterNot(row => row.estado).
-      filter(row => row.id === videoId).
-      result.headOption
-    result
+  val table = Table[Videos]("videos_by_conccurso")
+
+  def findNotConvertedVideo(concursoId: String, videoId: Int): Option[Videos] =  {
+    val result = Scanamo.exec(client)(table.get('url_concurso -> concursoId and 'video_id -> videoId))
+    result.flatMap {
+      case Right(video) => if (video.estado) None else Some(video)
+      case Left(_) => None
+    }
   }
 
-  override def updateVideoById(videoId: Int, contentType: String, fileName: String, fileSize: Int): DBIO[Int] = {
-    val result = videosQuery.filter(x => x.id === videoId && !x.estado).
-      map(row => (row.estado, row.fileConvertedContentType, row.fileConvertedName, row.fileConvertedSize, row.fileConvertedUpdatedAt))
-    result.update((true, Some(contentType), Some(fileName), Some(fileSize), Some(Instant.now())))
-  }
-
-
-
+  def updateVideoById(concursoId: String, videoId: Int, contentType: String, fileName: String, fileSize: Int): Int = ???
 }

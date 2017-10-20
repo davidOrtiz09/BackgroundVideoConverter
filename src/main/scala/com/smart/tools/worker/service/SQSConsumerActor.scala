@@ -39,7 +39,7 @@ class SQSConsumerActor(config: Config) extends Actor {
     .throttle(maxMsg, timeDelay.second, maxMsg, ThrottleMode.shaping)
     .runForeach((message) => {
       println(message.getBody)
-      val videoMsg = VideoWithMsg(message.getBody.toInt, message)
+      val videoMsg = VideoWithMsg(message.getBody.toInt, "/ejemplo" ,message)
      context.parent ! SearchUncompleteVideo(videoMsg)
     })
 

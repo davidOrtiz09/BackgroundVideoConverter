@@ -16,10 +16,10 @@ import scala.concurrent.Future
 object WorkerActor {
   case class StartVideoConversion(video: Videos, message: Message)
 
-  def props(config: Config, videoDAO : VideoDAO, db: JdbcBackend.Database) = Props(new WorkerActor(config, videoDAO, db))
+  def props(config: Config, videoDAO : VideoDAO) = Props(new WorkerActor(config, videoDAO))
 }
 
-class WorkerActor(config: Config, videoDAO : VideoDAO, db: JdbcBackend.Database) extends Actor {
+class WorkerActor(config: Config, videoDAO : VideoDAO) extends Actor {
 
   import context.dispatcher
 
@@ -31,13 +31,13 @@ class WorkerActor(config: Config, videoDAO : VideoDAO, db: JdbcBackend.Database)
 
   def receive: Receive = {
     case StartVideoConversion(video, message) => {
-      print("Emepzando conversion video con id : " + video.id)
+      print("Emepzando conversion video con id : " + video.video_id)
       val mySender = sender()
       for {
         (videoId, contentType, fileName, fileSize) <- convertVideo(video)
-        _ <- updateVideoState(videoId, contentType, fileName, fileSize)
+        _ <- Future(updateVideoState(videoId, contentType, fileName, fileSize))
       } yield {
-        mySender ! SendEmail(video.correo, video.nombre, video.apellido, video.concursoId)
+        mySender ! SendEmail(video.correo, video.nombre, video.apellido, video.url_concurso)
         mySender ! DeleteSqSMsg(message)
         self ! PoisonPill
       }
@@ -47,17 +47,17 @@ class WorkerActor(config: Config, videoDAO : VideoDAO, db: JdbcBackend.Database)
   private def updateVideoState(videoId: Int, contentType: String, fileName: String, fileSize: Int) = {
     println("..................Actualizando video : " + fileName + " " + "...........")
 
-    db.run(videoDAO.updateVideoById(videoId, contentType, fileName, fileSize))
+    videoDAO.updateVideoById("",videoId, contentType, fileName, fileSize)
   }
 
   private def convertVideo(video: Videos) : Future[(Int, String, String, Int)] = {
-    println("..................Convirtiendo video : " + video.fileName + " " + "...........")
+    println("..................Convirtiendo video : " + video.file_file_name + " " + "...........")
 
     val ffmpeg: FFmpeg = new FFmpeg(ffmpegPath)
     val ffprobe: FFprobe = new FFprobe(ffprobePath)
-    val nonConvertedFile = nonConvertedVideoPath + video.fileName
+    val nonConvertedFile = nonConvertedVideoPath + video.file_file_name
     val now = DateTime.now(DateTimeZone.UTC).getMillis().toString
-    val newFileName = video.fileName.split('.')(0) + now + ".mp4"
+    val newFileName = video.file_file_name.split('.')(0) + now + ".mp4"
     val convertedFile = convertedVideoPath + newFileName
     Future {
       val builder: FFmpegBuilder = new FFmpegBuilder()
@@ -72,7 +72,7 @@ class WorkerActor(config: Config, videoDAO : VideoDAO, db: JdbcBackend.Database)
       val executor = new FFmpegExecutor(ffmpeg, ffprobe)
       executor.createJob(builder).run()
     }.map( _ =>
-      (video.id, video.fileContentType, newFileName, video.fileSize)
+      (video.video_id, video.file_content_type, newFileName, video.file_file_size)
     )
   }
 }

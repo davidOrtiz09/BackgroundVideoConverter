@@ -17,10 +17,10 @@ object ActorConverter{
   case class SendEmail(correo: String, nombre: String, apellido: String, url: String)
   case class DeleteSqSMsg(message: Message)
 
-  def props(videoDAO : VideoDAO, config: Config, db: JdbcBackend.Database, emailService: EmailService) = Props(new ActorConverter(videoDAO, config, db, emailService))
+  def props(videoDAO : VideoDAO, config: Config, emailService: EmailService) = Props(new ActorConverter(videoDAO, config, emailService))
 }
 
-class ActorConverter(videoDAO : VideoDAO, config: Config, db: JdbcBackend.Database, emailService: EmailService) extends Actor {
+class ActorConverter(videoDAO : VideoDAO, config: Config, emailService: EmailService) extends Actor {
 
   import context.dispatcher
 
@@ -30,14 +30,9 @@ class ActorConverter(videoDAO : VideoDAO, config: Config, db: JdbcBackend.Databa
     case SearchUncompleteVideo(videoMsg) => {
       println("Buscando Videos que no han convertido")
 
-      val possibleVideo = db.run(videoDAO.findNotConvertedVideo(videoMsg.videoId))
+      val possibleVideo = videoDAO.findNotConvertedVideo(videoMsg.concursoId, videoMsg.videoId)
 
-      possibleVideo.onFailure {
-        case err: Exception =>
-          err.printStackTrace()
-      }
-
-      possibleVideo.foreach {
+      possibleVideo match {
         case Some(video) => {
           self ! CreateWorker(video, videoMsg.message)
         }
@@ -49,7 +44,7 @@ class ActorConverter(videoDAO : VideoDAO, config: Config, db: JdbcBackend.Databa
     }
 
     case CreateWorker(video, msg) => {
-      val worker = context.actorOf(WorkerActor.props(config, videoDAO, db))
+      val worker = context.actorOf(WorkerActor.props(config, videoDAO))
       worker ! StartVideoConversion(video, msg)
     }
 
