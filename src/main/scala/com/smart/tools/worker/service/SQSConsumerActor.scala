@@ -1,6 +1,7 @@
 package com.smart.tools.worker.service
 
 import akka.actor.{Actor, Props}
+import akka.stream.alpakka.sqs.{MessageAttributeName, SqsSourceSettings}
 import akka.stream.alpakka.sqs.scaladsl.SqsSource
 import akka.stream.{ActorMaterializer, ThrottleMode}
 import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
@@ -35,11 +36,13 @@ class SQSConsumerActor(config: Config) extends Actor {
 
   implicit private val mat = ActorMaterializer()
 
-  SqsSource(queueUrl)
+  SqsSource(queueUrl, SqsSourceSettings.Defaults.copy(messageAttributeNames = Seq(MessageAttributeName("id"),MessageAttributeName("url"))))
     .throttle(maxMsg, timeDelay.second, maxMsg, ThrottleMode.shaping)
     .runForeach((message) => {
-      println(message.getBody)
-      val videoMsg = VideoWithMsg(message.getBody.toInt, "/ejemplo" ,message)
+      val videoId = message.getMessageAttributes.get("id").getStringValue.toInt
+      val videoUrl = message.getMessageAttributes.get("url").getStringValue
+      val videoMsg = VideoWithMsg(videoId, videoUrl ,message)
+      println(s"reciviendo mensaje con video id : $videoId")
      context.parent ! SearchUncompleteVideo(videoMsg)
     })
 

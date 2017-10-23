@@ -17,10 +17,10 @@ object ActorConverter{
   case class SendEmail(correo: String, nombre: String, apellido: String, url: String)
   case class DeleteSqSMsg(message: Message)
 
-  def props(videoDAO : VideoDAO, config: Config, emailService: EmailService) = Props(new ActorConverter(videoDAO, config, emailService))
+  def props(videoDAO : VideoDAO, config: Config, emailService: EmailService, s3Connector: S3Connector) = Props(new ActorConverter(videoDAO, config, emailService, s3Connector))
 }
 
-class ActorConverter(videoDAO : VideoDAO, config: Config, emailService: EmailService) extends Actor {
+class ActorConverter(videoDAO : VideoDAO, config: Config, emailService: EmailService, s3Connector: S3Connector) extends Actor {
 
   import context.dispatcher
 
@@ -44,7 +44,8 @@ class ActorConverter(videoDAO : VideoDAO, config: Config, emailService: EmailSer
     }
 
     case CreateWorker(video, msg) => {
-      val worker = context.actorOf(WorkerActor.props(config, videoDAO))
+
+      val worker = context.actorOf(WorkerActor.props(config, videoDAO, s3Connector))
       worker ! StartVideoConversion(video, msg)
     }
 

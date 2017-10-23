@@ -10,16 +10,15 @@ import com.typesafe.config.Config
 import net.bramp.ffmpeg.builder.FFmpegBuilder
 import net.bramp.ffmpeg.{FFmpeg, FFmpegExecutor, FFprobe}
 import org.joda.time.{DateTime, DateTimeZone}
-import slick.jdbc.JdbcBackend
 import scala.concurrent.Future
 
 object WorkerActor {
   case class StartVideoConversion(video: Videos, message: Message)
 
-  def props(config: Config, videoDAO : VideoDAO) = Props(new WorkerActor(config, videoDAO))
+  def props(config: Config, videoDAO : VideoDAO, s3Connector: S3Connector) = Props(new WorkerActor(config, videoDAO, s3Connector))
 }
 
-class WorkerActor(config: Config, videoDAO : VideoDAO) extends Actor {
+class WorkerActor(config: Config, videoDAO : VideoDAO, s3Connector: S3Connector) extends Actor {
 
   import context.dispatcher
 
@@ -34,8 +33,11 @@ class WorkerActor(config: Config, videoDAO : VideoDAO) extends Actor {
       print("Empezando conversion video con id : " + video.video_id)
       val mySender = sender()
       for {
-        (videoId, contentType, fileName, fileSize) <- convertVideo(video)
-        _ <- Future(updateVideoState(videoId, contentType, fileName, fileSize))
+         _ <- s3Connector.descargarVideo(video.video_nc)
+        (videoId, fileName) <- convertVideo(video)
+         convertedFile = convertedVideoPath + fileName
+        _ <- s3Connector.subirVideo(fileName, convertedFile)
+        _ <- Future(updateVideoState(videoId, fileName, video.url_concurso))
       } yield {
         mySender ! SendEmail(video.correo, video.nombre, video.apellido, video.url_concurso)
         mySender ! DeleteSqSMsg(message)
@@ -44,20 +46,20 @@ class WorkerActor(config: Config, videoDAO : VideoDAO) extends Actor {
     }
   }
 
-  private def updateVideoState(videoId: Int, contentType: String, fileName: String, fileSize: Int) = {
+  private def updateVideoState(videoId: Int, fileName: String, concursoId: String) = {
     println("..................Actualizando video : " + fileName + " " + "...........")
 
-    videoDAO.updateVideoById("",videoId, contentType, fileName, fileSize)
+    videoDAO.updateVideoById(concursoId,videoId, fileName)
   }
 
-  private def convertVideo(video: Videos) : Future[(Int, String, String, Int)] = {
-    println("..................Convirtiendo video : " + video.file_file_name + " " + "...........")
+  private def convertVideo(video: Videos) : Future[(Int, String)] = {
+    println("..................Convirtiendo video : " + video.video_nc + " " + "...........")
 
     val ffmpeg: FFmpeg = new FFmpeg(ffmpegPath)
     val ffprobe: FFprobe = new FFprobe(ffprobePath)
-    val nonConvertedFile = nonConvertedVideoPath + video.file_file_name
+    val nonConvertedFile = nonConvertedVideoPath + video.video_nc
     val now = DateTime.now(DateTimeZone.UTC).getMillis().toString
-    val newFileName = video.file_file_name.split('.')(0) + now + ".mp4"
+    val newFileName = video.video_nc.split('.')(0) + now + ".mp4"
     val convertedFile = convertedVideoPath + newFileName
     Future {
       val builder: FFmpegBuilder = new FFmpegBuilder()
@@ -72,7 +74,7 @@ class WorkerActor(config: Config, videoDAO : VideoDAO) extends Actor {
       val executor = new FFmpegExecutor(ffmpeg, ffprobe)
       executor.createJob(builder).run()
     }.map( _ =>
-      (video.video_id, video.file_content_type, newFileName, video.file_file_size)
+      (video.video_id, newFileName)
     )
   }
 }

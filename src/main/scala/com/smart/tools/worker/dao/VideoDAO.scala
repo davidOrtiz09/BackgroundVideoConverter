@@ -8,7 +8,7 @@ import com.gu.scanamo.syntax._
 trait VideoDAO {
 
   def findNotConvertedVideo(concursoId: String, videoId : Int): Option[Videos]
-  def updateVideoById(concursoId: String, videoId: Int, contentType: String, fileName: String, fileSize: Int): Int
+  def updateVideoById(concursoId: String, videoId: Int, fileName: String): Int
 
 }
 class VideoNoSqlImplDAO extends VideoDAO with DynamoConnector {
@@ -23,10 +23,9 @@ class VideoNoSqlImplDAO extends VideoDAO with DynamoConnector {
     }
   }
 
-  def updateVideoById(concursoId: String, videoId: Int, contentType: String, fileName: String, fileSize: Int): Int = {
+  def updateVideoById(concursoId: String, videoId: Int, fileName: String): Int = {
     val result = Scanamo.exec(client)(table.update('url_concurso -> concursoId and 'video_id -> videoId, set('estado -> true)
-    and set('file_converted_file_name -> fileName) and set('file_converted_content_type -> contentType)
-      and set('file_converted_file_size -> fileSize)))
+    and set('video_c -> fileName) ))
     result match {
       case Right(_) => 1
       case Left(_) => 0
