@@ -30,7 +30,7 @@ class WorkerActor(config: Config, videoDAO : VideoDAO, s3Connector: S3Connector)
 
   def receive: Receive = {
     case StartVideoConversion(video, message) => {
-      print("Empezando conversion video con id : " + video.video_id)
+      println("Empezando conversion video con id : " + video.video_id)
       val mySender = sender()
       for {
          _ <- s3Connector.descargarVideo(video.video_nc)
