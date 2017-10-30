@@ -25,6 +25,7 @@ class S3Connector(config: Config) {
       .build()
 
   def descargarVideo(nombre: String)(implicit ex: ExecutionContext): Future[(ObjectMetadata, String)] = {
+    println("...........Descargando video : " + nombre)
     val result = Future {
       val path = s"videos/noConvertidos/$nombre"
       val pathS3 = s"noConvertidos/$nombre"
@@ -44,6 +45,7 @@ class S3Connector(config: Config) {
   }
 
   def subirVideo(nombre: String, fileNamePath: String)(implicit ex: ExecutionContext) = {
+    println("...........Subiendo video : " + nombre)
     val result = Future {
       val pathS3 = s"convertidos/$nombre"
       val fileStream = FileUtils.readFileToByteArray(new File(fileNamePath))
