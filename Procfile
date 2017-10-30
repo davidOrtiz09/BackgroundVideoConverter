@@ -1,1 +1,1 @@
-worker: target/scala-2.11/backgroundvideoconverter
+worker: target/universal/stage/bin/backgroundvideoconverter
