@@ -61,7 +61,7 @@ class WorkerActor(config: Config, videoDAO : VideoDAO, s3Connector: S3Connector)
     val now = DateTime.now(DateTimeZone.UTC).getMillis().toString
     val newFileName = video.video_nc.split('.')(0) + now + ".mp4"
     val convertedFile = convertedVideoPath + newFileName
-    Future {
+    val result = Future {
       val builder: FFmpegBuilder = new FFmpegBuilder()
         .setInput(nonConvertedFile)
         .overrideOutputFiles(true)
@@ -76,5 +76,14 @@ class WorkerActor(config: Config, videoDAO : VideoDAO, s3Connector: S3Connector)
     }.map( _ =>
       (video.video_id, newFileName)
     )
+
+    result.onFailure{
+      case error: Exception => {
+        println("Error conviertiendo videos ............")
+        error.printStackTrace()
+      }
+    }
+
+    result
   }
 }
