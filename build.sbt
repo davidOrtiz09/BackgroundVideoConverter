@@ -1,3 +1,5 @@
+import com.typesafe.sbt.packager.archetypes.JavaAppPackaging
+
 name := "BackgroundVideoConverter"
 
 version := "1.0"
@@ -18,6 +20,7 @@ libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-testkit" % "2.5.4" % Test
 )
 
+enablePlugins(JavaAppPackaging)
 
 mainClass in assembly := Some("com.smart.tools.worker.main.Main")
 assemblyJarName in assembly := "smartools-worker.jar"
