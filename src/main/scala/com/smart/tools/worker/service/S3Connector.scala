@@ -25,7 +25,7 @@ class S3Connector(config: Config) {
       .build()
 
   def descargarVideo(nombre: String)(implicit ex: ExecutionContext): Future[(ObjectMetadata, String)] = {
-    Future {
+    val result = Future {
       val path = s"videos/noConvertidos/$nombre"
       val pathS3 = s"noConvertidos/$nombre"
       val s3Object = s3Client.getObject(new GetObjectRequest(bucketName, pathS3),
@@ -34,15 +34,29 @@ class S3Connector(config: Config) {
 
       (s3Object, path)
     }
+    result.onFailure{
+      case error: Exception => {
+        println("Error descargando de S3 ............")
+        error.printStackTrace()
+      }
+    }
+    result
   }
 
   def subirVideo(nombre: String, fileNamePath: String)(implicit ex: ExecutionContext) = {
-    Future {
+    val result = Future {
       val pathS3 = s"convertidos/$nombre"
       val fileStream = FileUtils.readFileToByteArray(new File(fileNamePath))
       val input = new ByteArrayInputStream(fileStream)
       s3Client.putObject(bucketName, pathS3, input, new ObjectMetadata)
     }
+    result.onFailure{
+      case error: Exception => {
+        println("Error cargando a S3 ............")
+        error.printStackTrace()
+      }
+    }
+    result
   }
 
 
