@@ -36,11 +36,11 @@ class SQSConsumerActor(config: Config) extends Actor {
 
   implicit private val mat = ActorMaterializer()
 
-  SqsSource(queueUrl, SqsSourceSettings.Defaults.copy(messageAttributeNames = Seq(MessageAttributeName("id"),MessageAttributeName("url"))))
+  SqsSource(queueUrl, SqsSourceSettings.Defaults.copy(messageAttributeNames = Seq(MessageAttributeName("Id"),MessageAttributeName("Url"))))
     .throttle(maxMsg, timeDelay.second, maxMsg, ThrottleMode.shaping)
     .runForeach((message) => {
-      val videoId = message.getMessageAttributes.get("id").getStringValue.toInt
-      val videoUrl = message.getMessageAttributes.get("url").getStringValue
+      val videoId = message.getMessageAttributes.get("Id").getStringValue.toInt
+      val videoUrl = message.getMessageAttributes.get("Url").getStringValue
       val videoMsg = VideoWithMsg(videoId, videoUrl ,message)
       println(s"reciviendo mensaje con video id : $videoId")
      context.parent ! SearchUncompleteVideo(videoMsg)
