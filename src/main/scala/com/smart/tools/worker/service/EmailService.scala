@@ -42,10 +42,12 @@ class EmailServiceImpl(config: Config)(implicit ec: ExecutionContext) extends Em
     Future{
     val sg = new SendGrid(System.getenv("SENDGRID_API_KEY"))
     val request = new Request()
+      println("Sending...")
       request.method = Method.POST
       request.endpoint = "mail/send"
       request.body = mail.build()
       val response: Response = sg.api(request)
+      println("Email sent!")
       response
     }
   }
