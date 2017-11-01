@@ -50,7 +50,7 @@ class ActorConverter(videoDAO : VideoDAO, config: Config, emailService: EmailSer
     }
 
     case SendEmail(correo, nombre, apellido, url) => {
-      emailService.sendEmail(correo, nombre, apellido, url).foreach(session => session.close())
+      emailService.sendGridEmail(correo, nombre, apellido, url).foreach(session => session.statusCode)
     }
     case DeleteSqSMsg(msg) => {
       sqsConsumer ! DeleteMsg(msg)

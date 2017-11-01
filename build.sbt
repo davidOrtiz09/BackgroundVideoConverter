@@ -17,6 +17,7 @@ libraryDependencies ++= Seq(
   "javax.mail" % "mail" % "1.4.7",
   "com.lightbend.akka" % "akka-stream-alpakka-sqs_2.11" % "0.13",
   "com.gu" % "scanamo_2.11" % "1.0.0-M1",
+  "com.sendgrid" % "sendgrid-java" % "3.0.9",
   "com.typesafe.akka" %% "akka-testkit" % "2.5.4" % Test
 )
 

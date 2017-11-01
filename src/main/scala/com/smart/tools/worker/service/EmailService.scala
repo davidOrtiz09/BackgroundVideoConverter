@@ -5,10 +5,13 @@ import com.typesafe.config.Config
 import scala.concurrent.{ExecutionContext, Future}
 import javax.mail.internet.InternetAddress
 import javax.mail.internet.MimeMessage
+import com.sendgrid._
 
 trait EmailService {
 
   def sendEmail(correo: String, nombre: String, apellido: String, url: String): Future[Transport]
+
+  def sendGridEmail(correo: String, nombre: String, apellido: String, url: String): Future[Response]
 
 }
 
@@ -30,7 +33,24 @@ class EmailServiceImpl(config: Config)(implicit ec: ExecutionContext) extends Em
   props.put("mail.smtp.ssl.enable", "true")
   props.put("mail.smtp.auth", "true")
 
-  def sendEmail(correo: String, nombre: String, apellido: String, url: String): Future[Transport] = {
+  def sendGridEmail(correo: String, nombre: String, apellido: String, url: String) = {
+    val newUrl = "http://" + mainUrl + "/concursos/" + url
+    val from = new Email(fromCorreo)
+    val to = new Email(correo)
+    val content = new Content("text/html", loadBody(newUrl, nombre, apellido))
+    val mail = new Mail(from, subject, to, content)
+    val sg = new SendGrid(System.getenv("SENDGRID_API_KEY"))
+    val request = new Request()
+    Future{
+      request.method = Method.POST
+      request.endpoint = "mail/send"
+      request.body = mail.build()
+      val response: Response = sg.api(request)
+      response
+    }
+  }
+
+  def sendEmail(correo: String, nombre: String, apellido: String, url: String) = {
     val newUrl = "http://" + mainUrl + "/concursos/" + url
     val body = loadBody(newUrl, nombre, apellido)
     val (session, msg) = configEmailSettings(correo, body)
@@ -43,7 +63,6 @@ class EmailServiceImpl(config: Config)(implicit ec: ExecutionContext) extends Em
       transport
     }
   }
-
 
   private def configEmailSettings(toCorreo: String, body: String): (Session, MimeMessage) = {
     val session = Session.getDefaultInstance(props)
