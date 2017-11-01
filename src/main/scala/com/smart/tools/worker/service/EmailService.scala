@@ -39,9 +39,9 @@ class EmailServiceImpl(config: Config)(implicit ec: ExecutionContext) extends Em
     val to = new Email(correo)
     val content = new Content("text/html", loadBody(newUrl, nombre, apellido))
     val mail = new Mail(from, subject, to, content)
+    Future{
     val sg = new SendGrid(System.getenv("SENDGRID_API_KEY"))
     val request = new Request()
-    Future{
       request.method = Method.POST
       request.endpoint = "mail/send"
       request.body = mail.build()

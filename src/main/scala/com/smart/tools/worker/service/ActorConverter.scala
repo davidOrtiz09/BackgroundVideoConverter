@@ -50,7 +50,14 @@ class ActorConverter(videoDAO : VideoDAO, config: Config, emailService: EmailSer
     }
 
     case SendEmail(correo, nombre, apellido, url) => {
-      emailService.sendGridEmail(correo, nombre, apellido, url).foreach(session => session.statusCode)
+      val result = emailService.sendGridEmail(correo, nombre, apellido, url)
+      result.onFailure{
+        case error: Exception => {
+          println("Error enviando correo")
+          error.printStackTrace()
+        }
+      }
+      result
     }
     case DeleteSqSMsg(msg) => {
       sqsConsumer ! DeleteMsg(msg)
